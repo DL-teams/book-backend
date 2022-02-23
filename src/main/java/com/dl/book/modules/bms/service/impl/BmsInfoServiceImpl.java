@@ -2,6 +2,9 @@ package com.dl.book.modules.bms.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.dl.book.common.api.IErrorCode;
+import com.dl.book.common.api.ResultCode;
+import com.dl.book.common.exception.ApiException;
 import com.dl.book.modules.bms.dto.BmsInfoParam;
 import com.dl.book.modules.bms.mapper.BmsCategoryMappingMapper;
 import com.dl.book.modules.bms.mapper.BmsPressMappingMapper;
@@ -9,16 +12,18 @@ import com.dl.book.modules.bms.model.BmsCategoryMapping;
 import com.dl.book.modules.bms.model.BmsInfo;
 import com.dl.book.modules.bms.mapper.BmsInfoMapper;
 import com.dl.book.modules.bms.model.BmsPressMapping;
+import com.dl.book.modules.bms.request.BmsBookAddRequest;
 import com.dl.book.modules.bms.service.BmsInfoService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -36,11 +41,15 @@ public class BmsInfoServiceImpl extends ServiceImpl<BmsInfoMapper, BmsInfo> impl
 
     private final BmsPressMappingMapper bmsPressMappingMapper;
 
+    private final BmsInfoMapper bmsInfoMapper;
+
     @Autowired
     public BmsInfoServiceImpl(BmsCategoryMappingMapper bmsCategoryMappingMapper,
-                              BmsPressMappingMapper bmsPressMappingMapper) {
+                              BmsPressMappingMapper bmsPressMappingMapper,
+                              BmsInfoMapper bmsInfoMapper) {
         this.bmsCategoryMappingMapper = bmsCategoryMappingMapper;
         this.bmsPressMappingMapper = bmsPressMappingMapper;
+        this.bmsInfoMapper = bmsInfoMapper;
     }
 
     @Override
@@ -86,5 +95,39 @@ public class BmsInfoServiceImpl extends ServiceImpl<BmsInfoMapper, BmsInfo> impl
             wrapper.lambda().in(BmsInfo::getId, bookIdSet);
         }
         return page(page, wrapper);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public boolean create(BmsBookAddRequest bmsBookAddRequest) {
+        // 查询图书编号是否存在
+        QueryWrapper<BmsInfo> wrapper = new QueryWrapper<>();
+        wrapper.lambda().eq(BmsInfo::getCode, bmsBookAddRequest.getCode()).eq(BmsInfo::getIsDeteled, Boolean.TRUE);
+        BmsInfo bmsInfo = bmsInfoMapper.selectOne(wrapper);
+        BmsInfo bmsBookInfo = new BmsInfo();
+        if (!ObjectUtils.isEmpty(bmsInfo)) {
+            throw new ApiException(ResultCode.BOOKING_CODE_EXIST);
+        }
+        BeanUtils.copyProperties(bmsBookAddRequest, bmsBookInfo);
+        int insertCount = bmsInfoMapper.insert(bmsBookInfo);
+        int insertBmsCategoryMapping = 0;
+        int insertBmsPressMapping = 0;
+        if (insertCount > 0) {
+            // 添加book和category的关系表
+            BmsCategoryMapping bmsCategoryMapping = new BmsCategoryMapping();
+            bmsCategoryMapping.setCategoryId(bmsBookAddRequest.getCategoryId());
+            bmsCategoryMapping.setBookId(bmsBookInfo.getId());
+            insertBmsCategoryMapping = bmsCategoryMappingMapper.insert(bmsCategoryMapping);
+
+            // 添加press和book的关系表
+            BmsPressMapping bmsPressMapping = new BmsPressMapping();
+            bmsPressMapping.setBookId(bmsBookInfo.getId());
+            bmsPressMapping.setPressId(bmsBookAddRequest.getPressId());
+            insertBmsPressMapping = bmsPressMappingMapper.insert(bmsPressMapping);
+        }
+        if (insertBmsPressMapping > 0 && insertBmsCategoryMapping > 0) {
+            return true;
+        }
+        return false;
     }
 }

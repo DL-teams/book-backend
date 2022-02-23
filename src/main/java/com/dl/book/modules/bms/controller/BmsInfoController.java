@@ -3,13 +3,14 @@ package com.dl.book.modules.bms.controller;
 
 import com.dl.book.common.api.CommonResult;
 import com.dl.book.modules.bms.dto.BmsInfoParam;
-import com.dl.book.modules.bms.dto.BmsPressParam;
+import com.dl.book.modules.bms.request.BmsBookAddRequest;
 import com.dl.book.modules.bms.service.BmsInfoService;
-import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -27,9 +28,14 @@ public class BmsInfoController {
     @Autowired
     private BmsInfoService bmsInfoService;
 
-    @GetMapping("list")
+    @GetMapping("/list")
     public CommonResult listBooks(BmsInfoParam bmsInfoParam) {
         return CommonResult.success(bmsInfoService.listBooking(bmsInfoParam));
+    }
+
+    @PostMapping("/create")
+    public CommonResult create(@RequestBody @Validated BmsBookAddRequest bmsBookAddRequest) {
+        return CommonResult.success(bmsInfoService.create(bmsBookAddRequest));
     }
 
 }
