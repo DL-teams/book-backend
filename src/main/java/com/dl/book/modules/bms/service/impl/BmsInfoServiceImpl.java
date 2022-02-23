@@ -12,6 +12,7 @@ import com.dl.book.modules.bms.model.BmsPressMapping;
 import com.dl.book.modules.bms.service.BmsInfoService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.ObjectUtils;
@@ -58,25 +59,31 @@ public class BmsInfoServiceImpl extends ServiceImpl<BmsInfoMapper, BmsInfo> impl
                 .like(BmsInfo::getAuthor, bmsInfoParam.getAuthor());
         }
 
-        List<Integer> bookList = new ArrayList<>();
-        if (ObjectUtils.isEmpty(bmsInfoParam.getCategoryId())) {
+        HashSet<Integer> bookIdSet = new HashSet<>();
+        if (!ObjectUtils.isEmpty(bmsInfoParam.getCategoryId())) {
             QueryWrapper<BmsCategoryMapping> bmsCategoryWrapper = new QueryWrapper<>();
             bmsCategoryWrapper.lambda().eq(BmsCategoryMapping::getCategoryId, bmsInfoParam.getCategoryId());
             List<BmsCategoryMapping> bmsCategoryMappingList = bmsCategoryMappingMapper.selectList(bmsCategoryWrapper);
             List<Integer> bookIds =
                 bmsCategoryMappingList.stream().map(BmsCategoryMapping::getBookId).collect(Collectors.toList());
-            bookList.addAll(bookIds);
+            if (CollectionUtils.isEmpty(bookIds)) {
+                return null;
+            }
+            bookIdSet.addAll(bookIds);
         }
-        if (ObjectUtils.isEmpty(bmsInfoParam.getPressId())) {
+        if (!ObjectUtils.isEmpty(bmsInfoParam.getPressId())) {
             QueryWrapper<BmsPressMapping> bmsPressMappingWrapper = new QueryWrapper<>();
             bmsPressMappingWrapper.lambda().eq(BmsPressMapping::getPressId, bmsInfoParam.getPressId());
             List<BmsPressMapping> bmsPressMappingList = bmsPressMappingMapper.selectList(bmsPressMappingWrapper);
             List<Integer> bookIds =
                 bmsPressMappingList.stream().map(BmsPressMapping::getBookId).collect(Collectors.toList());
-            bookList.addAll(bookIds);
+            if (CollectionUtils.isEmpty(bookIds)) {
+                return null;
+            }
+            bookIdSet.addAll(bookIds);
         }
-        if (!CollectionUtils.isEmpty(bookList)) {
-            wrapper.lambda().in(BmsInfo::getId, bookList);
+        if (!CollectionUtils.isEmpty(bookIdSet)) {
+            wrapper.lambda().in(BmsInfo::getId, bookIdSet);
         }
         return page(page, wrapper);
     }

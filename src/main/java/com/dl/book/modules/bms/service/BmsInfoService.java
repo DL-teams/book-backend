@@ -17,6 +17,13 @@ import com.dl.book.modules.bms.model.BmsPress;
  */
 public interface BmsInfoService extends IService<BmsInfo> {
 
+    /**
+     * 查询图书列表
+     * @param bmsInfoParam bmsInfoParam
+     * @return BmsInfoList BmsInfoList
+     * @author jiangfendou
+     * @since 2022-02-22
+     */
     Page<BmsInfo> listBooking(BmsInfoParam bmsInfoParam);
 
 }
