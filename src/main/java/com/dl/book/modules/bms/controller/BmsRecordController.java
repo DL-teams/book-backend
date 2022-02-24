@@ -4,12 +4,10 @@ package com.dl.book.modules.bms.controller;
 import com.dl.book.common.api.CommonPage;
 import com.dl.book.common.api.CommonResult;
 import com.dl.book.modules.bms.dto.BmsRecordParam;
+import com.dl.book.modules.bms.model.BmsRecord;
 import com.dl.book.modules.bms.service.BmsRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * <p>
@@ -25,6 +23,26 @@ public class BmsRecordController {
 
     @Autowired
     private BmsRecordService bmsRecordService;
+
+    @PostMapping("create")
+    public CommonResult addRecord(@RequestBody BmsRecord bmsRecord) {
+        return CommonResult.success(bmsRecordService.addRecord(bmsRecord));
+    }
+
+    @PutMapping("update/{id}")
+    public CommonResult updateRecord(@RequestBody BmsRecord bmsRecord, @PathVariable Integer id) {
+        return CommonResult.success(bmsRecordService.updateRecord(bmsRecord,id));
+    }
+
+    @DeleteMapping("delete/{id}")
+    public CommonResult deleteRecord(@PathVariable Integer id) {
+        return CommonResult.success(bmsRecordService.deleteRecord(id));
+    }
+
+    @GetMapping("get/{id}")
+    public CommonResult getRecord(@PathVariable Integer id) {
+        return CommonResult.success(bmsRecordService.getRecord(id));
+    }
 
     @GetMapping("list")
     public CommonResult list(BmsRecordParam bmsRecordParam) {

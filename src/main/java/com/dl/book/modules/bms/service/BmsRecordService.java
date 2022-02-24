@@ -23,7 +23,7 @@ public interface BmsRecordService extends IService<BmsRecord> {
 
     Boolean deleteRecord(Integer id);
 
-    BmsRecord detailRecord(Integer id);
+    BmsRecord getRecord(Integer id);
 
     Page<BmsRecordInfo> recordsList(BmsRecordParam bmsRecordParam);
 }

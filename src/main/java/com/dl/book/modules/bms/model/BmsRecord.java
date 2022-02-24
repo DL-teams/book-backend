@@ -36,5 +36,5 @@ public class BmsRecord implements Serializable {
 
     private Integer bookId;
 
-
+    private Boolean isDeteled;
 }

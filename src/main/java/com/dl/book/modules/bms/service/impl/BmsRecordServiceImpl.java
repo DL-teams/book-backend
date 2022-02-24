@@ -40,12 +40,15 @@ public class BmsRecordServiceImpl extends ServiceImpl<BmsRecordMapper, BmsRecord
 
     @Override
     public Boolean deleteRecord(Integer id) {
-        return null;
+        BmsRecord bmsRecord = new BmsRecord();
+        bmsRecord.setId(id);
+        bmsRecord.setIsDeteled(Boolean.TRUE);
+        return this.updateById(bmsRecord);
     }
 
     @Override
-    public BmsRecord detailRecord(Integer id) {
-        return null;
+    public BmsRecord getRecord(Integer id) {
+        return this.getById(id);
     }
 
     @Override
