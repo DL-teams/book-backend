@@ -1,6 +1,7 @@
 package com.dl.book.modules.bms.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.dl.book.modules.bms.dto.BmsCardParam;
 import com.dl.book.modules.bms.model.BmsCard;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -14,5 +15,13 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface BmsCardService extends IService<BmsCard> {
 
-    Page<BmsCard> cardList(Integer pageNum, Integer pageSize);
+    Boolean addCard(BmsCard bmsCard);
+
+    Boolean updateCard(BmsCard bmsCard, Integer id);
+
+    Boolean deleteCard(Integer id);
+
+    BmsCard getCard(Integer id);
+
+    Page<BmsCard> cardList(BmsCardParam bmsCardParam);
 }
