@@ -146,9 +146,9 @@ public class BmsInfoServiceImpl extends ServiceImpl<BmsInfoMapper, BmsInfo> impl
     @Override
     public boolean update(BmsBookUpdateRequest bmsBookUpdateRequest, Integer bookId) {
         QueryWrapper<BmsInfo> wrapper = new QueryWrapper<>();
-        wrapper.lambda().eq(BmsInfo::getId, bookId).eq(BmsInfo::getIsDeteled, Boolean.TRUE);
+        wrapper.lambda().eq(BmsInfo::getId, bookId).eq(BmsInfo::getIsDeteled, Boolean.FALSE);
         if (ObjectUtils.isEmpty(bmsInfoMapper.selectOne(wrapper))) {
-            throw new ApiException(ResultCode.BOOK_CODE_EXIST);
+            throw new ApiException(ResultCode.TARGET_NOT_FOUND);
         }
         // 查询图书编号是否存在
         wrapper = new QueryWrapper<>();
@@ -160,15 +160,16 @@ public class BmsInfoServiceImpl extends ServiceImpl<BmsInfoMapper, BmsInfo> impl
             throw new ApiException(ResultCode.TARGET_NOT_FOUND);
         }
         QueryWrapper<BmsPressMapping> wrapperBmsPress = new QueryWrapper<>();
-        wrapperBmsPress.lambda().eq(BmsPressMapping::getBookId, bmsInfo.getId());
+        wrapperBmsPress.lambda().eq(BmsPressMapping::getBookId, bookId);
         BmsPressMapping bmsPressMapping = bmsPressMappingMapper.selectOne(wrapperBmsPress);
 
         QueryWrapper<BmsCategoryMapping> wrapperBmsCategory = new QueryWrapper<>();
-        wrapperBmsCategory.lambda().eq(BmsCategoryMapping::getBookId, bmsInfo.getId());
+        wrapperBmsCategory.lambda().eq(BmsCategoryMapping::getBookId, bookId);
         BmsCategoryMapping bmsCategoryMapping = bmsCategoryMappingMapper.selectOne(wrapperBmsCategory);
 
         BmsInfo bmsBookInfo = new BmsInfo();
         BeanUtils.copyProperties(bmsBookUpdateRequest, bmsBookInfo);
+        bmsBookInfo.setId(bookId);
         int bookCount = bmsInfoMapper.updateById(bmsBookInfo);
 
         if (bookCount > 0 &&
@@ -187,10 +188,10 @@ public class BmsInfoServiceImpl extends ServiceImpl<BmsInfoMapper, BmsInfo> impl
     @Override
     public boolean delete(Integer bookId) {
         QueryWrapper<BmsInfo> wrapper = new QueryWrapper<>();
-        wrapper.lambda().eq(BmsInfo::getId, bookId).eq(BmsInfo::getIsDeteled, Boolean.TRUE);
+        wrapper.lambda().eq(BmsInfo::getId, bookId).eq(BmsInfo::getIsDeteled, Boolean.FALSE);
         BmsInfo bmsInfo = bmsInfoMapper.selectOne(wrapper);
         if (ObjectUtils.isEmpty(bmsInfo)) {
-            throw new ApiException(ResultCode.BOOK_CODE_EXIST);
+            throw new ApiException(ResultCode.TARGET_NOT_FOUND);
         }
         bmsInfo.setIsDeteled(false);
         int deleteCount = bmsInfoMapper.updateById(bmsInfo);
@@ -209,10 +210,10 @@ public class BmsInfoServiceImpl extends ServiceImpl<BmsInfoMapper, BmsInfo> impl
     @Override
     public BmsBookDetailResponse detail(Integer bookId) {
         QueryWrapper<BmsInfo> wrapper = new QueryWrapper<>();
-        wrapper.lambda().eq(BmsInfo::getId, bookId).eq(BmsInfo::getIsDeteled, Boolean.TRUE);
+        wrapper.lambda().eq(BmsInfo::getId, bookId).eq(BmsInfo::getIsDeteled, Boolean.FALSE);
         BmsInfo bmsInfo = bmsInfoMapper.selectOne(wrapper);
         if (ObjectUtils.isEmpty(bmsInfo)) {
-            throw new ApiException(ResultCode.BOOK_CODE_EXIST);
+            throw new ApiException(ResultCode.TARGET_NOT_FOUND);
         }
         BmsBookDetailResponse bmsBookDetailResponse = new BmsBookDetailResponse();
         BeanUtils.copyProperties(bmsInfo, bmsBookDetailResponse);
@@ -220,11 +221,11 @@ public class BmsInfoServiceImpl extends ServiceImpl<BmsInfoMapper, BmsInfo> impl
         wrapperBmsCategory.lambda().eq(BmsCategoryMapping::getBookId, bookId);
         BmsCategoryMapping bmsCategoryMapping = bmsCategoryMappingMapper.selectOne(wrapperBmsCategory);
         if (ObjectUtils.isEmpty(bmsCategoryMapping)) {
-            throw new ApiException(ResultCode.BOOK_CODE_EXIST);
+            throw new ApiException(ResultCode.TARGET_NOT_FOUND);
         }
         BmsCategory bmsCategory = bmsCategoryMapper.selectById(bmsCategoryMapping.getCategoryId());
         if (ObjectUtils.isEmpty(bmsCategory)) {
-            throw new ApiException(ResultCode.BOOK_CODE_EXIST);
+            throw new ApiException(ResultCode.TARGET_NOT_FOUND);
         }
         bmsBookDetailResponse.setCategoryName(bmsCategory.getName());
 
@@ -232,11 +233,11 @@ public class BmsInfoServiceImpl extends ServiceImpl<BmsInfoMapper, BmsInfo> impl
         wrapperBmsPress.lambda().eq(BmsPressMapping::getBookId, bookId);
         BmsPressMapping bmsPressMapping = bmsPressMappingMapper.selectOne(wrapperBmsPress);
         if (ObjectUtils.isEmpty(bmsCategoryMapping)) {
-            throw new ApiException(ResultCode.BOOK_CODE_EXIST);
+            throw new ApiException(ResultCode.TARGET_NOT_FOUND);
         }
         BmsPress bmsPress = bmsPressMapper.selectById(bmsPressMapping.getPressId());
         if (ObjectUtils.isEmpty(bmsPress)) {
-            throw new ApiException(ResultCode.BOOK_CODE_EXIST);
+            throw new ApiException(ResultCode.TARGET_NOT_FOUND);
         }
         bmsBookDetailResponse.setPressName(bmsPress.getName());
         return bmsBookDetailResponse;
