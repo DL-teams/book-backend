@@ -2,21 +2,27 @@ package com.dl.book.modules.bms.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.dl.book.common.api.IErrorCode;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.dl.book.common.api.ResultCode;
 import com.dl.book.common.exception.ApiException;
 import com.dl.book.modules.bms.dto.BmsInfoParam;
+import com.dl.book.modules.bms.mapper.BmsCategoryMapper;
 import com.dl.book.modules.bms.mapper.BmsCategoryMappingMapper;
+import com.dl.book.modules.bms.mapper.BmsInfoMapper;
+import com.dl.book.modules.bms.mapper.BmsPressMapper;
 import com.dl.book.modules.bms.mapper.BmsPressMappingMapper;
+import com.dl.book.modules.bms.model.BmsCategory;
 import com.dl.book.modules.bms.model.BmsCategoryMapping;
 import com.dl.book.modules.bms.model.BmsInfo;
-import com.dl.book.modules.bms.mapper.BmsInfoMapper;
+import com.dl.book.modules.bms.model.BmsPress;
 import com.dl.book.modules.bms.model.BmsPressMapping;
 import com.dl.book.modules.bms.request.BmsBookAddRequest;
+import com.dl.book.modules.bms.request.BmsBookUpdateRequest;
+import com.dl.book.modules.bms.response.BmsBookDetailResponse;
 import com.dl.book.modules.bms.service.BmsInfoService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -43,13 +49,21 @@ public class BmsInfoServiceImpl extends ServiceImpl<BmsInfoMapper, BmsInfo> impl
 
     private final BmsInfoMapper bmsInfoMapper;
 
+    private final BmsCategoryMapper bmsCategoryMapper;
+
+    private final BmsPressMapper bmsPressMapper;
+
     @Autowired
     public BmsInfoServiceImpl(BmsCategoryMappingMapper bmsCategoryMappingMapper,
                               BmsPressMappingMapper bmsPressMappingMapper,
-                              BmsInfoMapper bmsInfoMapper) {
+                              BmsInfoMapper bmsInfoMapper,
+                              BmsCategoryMapper bmsCategoryMapper,
+                              BmsPressMapper bmsPressMapper) {
         this.bmsCategoryMappingMapper = bmsCategoryMappingMapper;
         this.bmsPressMappingMapper = bmsPressMappingMapper;
         this.bmsInfoMapper = bmsInfoMapper;
+        this.bmsCategoryMapper = bmsCategoryMapper;
+        this.bmsPressMapper = bmsPressMapper;
     }
 
     @Override
@@ -104,10 +118,10 @@ public class BmsInfoServiceImpl extends ServiceImpl<BmsInfoMapper, BmsInfo> impl
         QueryWrapper<BmsInfo> wrapper = new QueryWrapper<>();
         wrapper.lambda().eq(BmsInfo::getCode, bmsBookAddRequest.getCode()).eq(BmsInfo::getIsDeteled, Boolean.TRUE);
         BmsInfo bmsInfo = bmsInfoMapper.selectOne(wrapper);
-        BmsInfo bmsBookInfo = new BmsInfo();
         if (!ObjectUtils.isEmpty(bmsInfo)) {
-            throw new ApiException(ResultCode.BOOKING_CODE_EXIST);
+            throw new ApiException(ResultCode.BOOK_CODE_EXIST);
         }
+        BmsInfo bmsBookInfo = new BmsInfo();
         BeanUtils.copyProperties(bmsBookAddRequest, bmsBookInfo);
         int insertCount = bmsInfoMapper.insert(bmsBookInfo);
         int insertBmsCategoryMapping = 0;
@@ -125,9 +139,106 @@ public class BmsInfoServiceImpl extends ServiceImpl<BmsInfoMapper, BmsInfo> impl
             bmsPressMapping.setPressId(bmsBookAddRequest.getPressId());
             insertBmsPressMapping = bmsPressMappingMapper.insert(bmsPressMapping);
         }
-        if (insertBmsPressMapping > 0 && insertBmsCategoryMapping > 0) {
-            return true;
+        return insertBmsPressMapping > 0 && insertBmsCategoryMapping > 0;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public boolean update(BmsBookUpdateRequest bmsBookUpdateRequest, Integer bookId) {
+        QueryWrapper<BmsInfo> wrapper = new QueryWrapper<>();
+        wrapper.lambda().eq(BmsInfo::getId, bookId).eq(BmsInfo::getIsDeteled, Boolean.TRUE);
+        if (ObjectUtils.isEmpty(bmsInfoMapper.selectOne(wrapper))) {
+            throw new ApiException(ResultCode.BOOK_CODE_EXIST);
         }
-        return false;
+        // 查询图书编号是否存在
+        wrapper = new QueryWrapper<>();
+        wrapper.lambda().eq(BmsInfo::getCode, bmsBookUpdateRequest.getCode()).
+            eq(BmsInfo::getIsDeteled, Boolean.TRUE).
+            ne(BmsInfo::getId, bookId);
+        BmsInfo bmsInfo = bmsInfoMapper.selectOne(wrapper);
+        if (!ObjectUtils.isEmpty(bmsInfo)) {
+            throw new ApiException(ResultCode.TARGET_NOT_FOUND);
+        }
+        QueryWrapper<BmsPressMapping> wrapperBmsPress = new QueryWrapper<>();
+        wrapperBmsPress.lambda().eq(BmsPressMapping::getBookId, bmsInfo.getId());
+        BmsPressMapping bmsPressMapping = bmsPressMappingMapper.selectOne(wrapperBmsPress);
+
+        QueryWrapper<BmsCategoryMapping> wrapperBmsCategory = new QueryWrapper<>();
+        wrapperBmsCategory.lambda().eq(BmsCategoryMapping::getBookId, bmsInfo.getId());
+        BmsCategoryMapping bmsCategoryMapping = bmsCategoryMappingMapper.selectOne(wrapperBmsCategory);
+
+        BmsInfo bmsBookInfo = new BmsInfo();
+        BeanUtils.copyProperties(bmsBookUpdateRequest, bmsBookInfo);
+        int bookCount = bmsInfoMapper.updateById(bmsBookInfo);
+
+        if (bookCount > 0 &&
+            !Objects.equals(bmsPressMapping.getPressId(), bmsBookUpdateRequest.getPressId()) &&
+            !Objects.equals(bmsCategoryMapping.getCategoryId(), bmsBookUpdateRequest.getCategoryId())) {
+
+            bmsCategoryMapping.setCategoryId(bmsBookUpdateRequest.getCategoryId());
+            bmsCategoryMappingMapper.updateById(bmsCategoryMapping);
+            bmsPressMapping.setPressId(bmsBookUpdateRequest.getPressId());
+            bmsPressMappingMapper.updateById(bmsPressMapping);
+        }
+        return bookCount > 0;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public boolean delete(Integer bookId) {
+        QueryWrapper<BmsInfo> wrapper = new QueryWrapper<>();
+        wrapper.lambda().eq(BmsInfo::getId, bookId).eq(BmsInfo::getIsDeteled, Boolean.TRUE);
+        BmsInfo bmsInfo = bmsInfoMapper.selectOne(wrapper);
+        if (ObjectUtils.isEmpty(bmsInfo)) {
+            throw new ApiException(ResultCode.BOOK_CODE_EXIST);
+        }
+        bmsInfo.setIsDeteled(false);
+        int deleteCount = bmsInfoMapper.updateById(bmsInfo);
+        if (deleteCount > 0) {
+            QueryWrapper<BmsCategoryMapping> wrapperBmsCategory = new QueryWrapper<>();
+            wrapperBmsCategory.lambda().eq(BmsCategoryMapping::getBookId, bookId);
+            bmsCategoryMappingMapper.delete(wrapperBmsCategory);
+
+            QueryWrapper<BmsPressMapping> wrapperBmsPress = new QueryWrapper<>();
+            wrapperBmsPress.lambda().eq(BmsPressMapping::getBookId, bmsInfo.getId());
+            bmsPressMappingMapper.delete(wrapperBmsPress);
+        }
+        return deleteCount > 0;
+    }
+
+    @Override
+    public BmsBookDetailResponse detail(Integer bookId) {
+        QueryWrapper<BmsInfo> wrapper = new QueryWrapper<>();
+        wrapper.lambda().eq(BmsInfo::getId, bookId).eq(BmsInfo::getIsDeteled, Boolean.TRUE);
+        BmsInfo bmsInfo = bmsInfoMapper.selectOne(wrapper);
+        if (ObjectUtils.isEmpty(bmsInfo)) {
+            throw new ApiException(ResultCode.BOOK_CODE_EXIST);
+        }
+        BmsBookDetailResponse bmsBookDetailResponse = new BmsBookDetailResponse();
+        BeanUtils.copyProperties(bmsInfo, bmsBookDetailResponse);
+        QueryWrapper<BmsCategoryMapping> wrapperBmsCategory = new QueryWrapper<>();
+        wrapperBmsCategory.lambda().eq(BmsCategoryMapping::getBookId, bookId);
+        BmsCategoryMapping bmsCategoryMapping = bmsCategoryMappingMapper.selectOne(wrapperBmsCategory);
+        if (ObjectUtils.isEmpty(bmsCategoryMapping)) {
+            throw new ApiException(ResultCode.BOOK_CODE_EXIST);
+        }
+        BmsCategory bmsCategory = bmsCategoryMapper.selectById(bmsCategoryMapping.getCategoryId());
+        if (ObjectUtils.isEmpty(bmsCategory)) {
+            throw new ApiException(ResultCode.BOOK_CODE_EXIST);
+        }
+        bmsBookDetailResponse.setCategoryName(bmsCategory.getName());
+
+        QueryWrapper<BmsPressMapping> wrapperBmsPress = new QueryWrapper<>();
+        wrapperBmsPress.lambda().eq(BmsPressMapping::getBookId, bookId);
+        BmsPressMapping bmsPressMapping = bmsPressMappingMapper.selectOne(wrapperBmsPress);
+        if (ObjectUtils.isEmpty(bmsCategoryMapping)) {
+            throw new ApiException(ResultCode.BOOK_CODE_EXIST);
+        }
+        BmsPress bmsPress = bmsPressMapper.selectById(bmsPressMapping.getPressId());
+        if (ObjectUtils.isEmpty(bmsPress)) {
+            throw new ApiException(ResultCode.BOOK_CODE_EXIST);
+        }
+        bmsBookDetailResponse.setPressName(bmsPress.getName());
+        return bmsBookDetailResponse;
     }
 }

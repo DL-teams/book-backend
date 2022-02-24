@@ -9,7 +9,8 @@ public enum ResultCode implements IErrorCode {
     VALIDATE_FAILED(404, "参数检验失败"),
     UNAUTHORIZED(401, "暂未登录或token已经过期"),
     FORBIDDEN(403, "没有相关权限"),
-    BOOKING_CODE_EXIST(404, "图书编号已存在");
+    BOOK_CODE_EXIST(404, "图书编号已存在"),
+    TARGET_NOT_FOUND(404, "目标数据没有被找到");
     private long code;
     private String message;
 
