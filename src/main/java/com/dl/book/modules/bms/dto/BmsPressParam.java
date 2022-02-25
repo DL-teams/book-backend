@@ -6,7 +6,7 @@ import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class BmsCategoryParam extends PageQuery {
+public class BmsPressParam extends PageQuery {
 
     private String code;
 

@@ -11,7 +11,7 @@
  Target Server Version : 80021
  File Encoding         : 65001
 
- Date: 22/02/2022 14:41:04
+ Date: 22/02/2022 17:53:20
 */
 
 SET NAMES utf8mb4;
@@ -111,14 +111,18 @@ CREATE TABLE `bms_press` (
   `id` int NOT NULL AUTO_INCREMENT,
   `code` varchar(255) COLLATE utf8mb4_bin NOT NULL COMMENT '出版社编号',
   `name` varchar(255) COLLATE utf8mb4_bin NOT NULL COMMENT '出版社名称',
+  `show_status` int DEFAULT '0' COMMENT '是否显示 0 否 1 是',
+  `sort` int DEFAULT '0' COMMENT '排序',
   `is_deleted` tinyint(1) DEFAULT '0' COMMENT '删除标识',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='出版社';
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='出版社';
 
 -- ----------------------------
 -- Records of bms_press
 -- ----------------------------
 BEGIN;
+INSERT INTO `bms_press` VALUES (1, '2', '北京xxx出版社', 1, 0, 0);
+INSERT INTO `bms_press` VALUES (2, '1', '11', 1, 0, 1);
 COMMIT;
 
 -- ----------------------------
@@ -313,8 +317,8 @@ CREATE TABLE `ums_resource` (
 -- ----------------------------
 BEGIN;
 INSERT INTO `ums_resource` VALUES (1, '2020-02-04 17:04:55', '商品品牌管理', '/brand/**', NULL, 1);
-INSERT INTO `ums_resource` VALUES (2, '2020-02-04 17:05:35', '图书属性分类管理', '/bookAttribute/**', NULL, 1);
-INSERT INTO `ums_resource` VALUES (3, '2020-02-04 17:06:13', '图书属性管理', '/bookAttribute/**', NULL, 1);
+INSERT INTO `ums_resource` VALUES (2, '2020-02-04 17:05:35', '图书属性分类管理', '/book1/**', NULL, 1);
+INSERT INTO `ums_resource` VALUES (3, '2020-02-04 17:06:13', '图书出版社管理', '/bookPress/**', NULL, 1);
 INSERT INTO `ums_resource` VALUES (4, '2020-02-04 17:07:15', '图书分类管理', '/bookCategory/**', NULL, 1);
 INSERT INTO `ums_resource` VALUES (5, '2020-02-04 17:09:16', '图书管理', '/book/**', NULL, 1);
 INSERT INTO `ums_resource` VALUES (6, '2020-02-04 17:09:53', '商品库存管理', '/sku/**', NULL, 1);
