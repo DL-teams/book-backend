@@ -147,12 +147,13 @@ COMMIT;
 -- ----------------------------
 DROP TABLE IF EXISTS `bms_record`;
 CREATE TABLE `bms_record` (
-  `id` int NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
   `status` int DEFAULT NULL,
   `start_date` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   `end_date` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   `card_id` int DEFAULT NULL,
   `book_id` int DEFAULT NULL,
+  `is_deteled` tinyint(1) DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='借阅还书记录表';
 
